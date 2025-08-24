@@ -1,0 +1,818 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - FutureMesh{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+        <div class="welcome-content">
+            <h1 class="welcome-title">
+                Welcome back, <span class="user-name" id="userName">User</span>!
+            </h1>
+            <p class="welcome-subtitle" id="welcomeSubtitle">
+                Ready to take your career to the next level?
+            </p>
+        </div>
+        <div class="welcome-actions">
+            <button class="btn btn-primary" id="quickActionBtn">
+                <i class="fas fa-plus"></i>
+                <span id="quickActionText">Quick Action</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Dashboard Stats -->
+    <div class="dashboard-grid" id="dashboardStats">
+        <!-- Stats cards will be populated by JavaScript -->
+    </div>
+
+    <!-- Role-specific Content -->
+    <div class="dashboard-content" id="dashboardContent">
+        <!-- Content will be populated based on user role -->
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section" id="chartsSection">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Activity Overview</h3>
+                        <div class="card-actions">
+                            <select class="form-select form-select-sm" id="chartPeriod">
+                                <option value="7">Last 7 Days</option>
+                                <option value="30" selected>Last 30 Days</option>
+                                <option value="90">Last 3 Months</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="activityChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Distribution</h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="distributionChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="recent-activity-section">
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Activity</h3>
+                <a href="#" class="btn btn-outline-light btn-sm">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="activity-list" id="recentActivityList">
+                    <!-- Activity items will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Role-specific Modals -->
+<div id="roleModals">
+    <!-- Modals will be added dynamically based on role -->
+</div>
+
+<style>
+.dashboard-container {
+    padding: 0;
+}
+
+.welcome-section {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.welcome-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+.user-name {
+    color: var(--neon-blue);
+}
+
+.welcome-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.welcome-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.dashboard-content {
+    margin: 30px 0;
+}
+
+.charts-section {
+    margin: 30px 0;
+}
+
+.recent-activity-section {
+    margin-top: 30px;
+}
+
+.activity-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all var(--transition-fast);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.activity-icon.job { background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple)); }
+.activity-icon.application { background: linear-gradient(135deg, var(--neon-green), var(--neon-blue)); }
+.activity-icon.message { background: linear-gradient(135deg, var(--neon-orange), var(--neon-pink)); }
+.activity-icon.notification { background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink)); }
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+}
+
+.activity-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.activity-time {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+/* Role-specific Content Styles */
+.role-section {
+    margin-bottom: 30px;
+}
+
+.role-section h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.content-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    transition: all var(--transition-fast);
+}
+
+.content-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+}
+
+.content-card h4 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--text-primary);
+}
+
+.content-card p {
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.quick-stat {
+    text-align: center;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.quick-stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--neon-blue);
+    display: block;
+}
+
+.quick-stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 5px;
+}
+
+/* Loading States */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+
+.loading i {
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: var(--text-muted);
+}
+
+.empty-state h4 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+.empty-state p {
+    margin-bottom: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .welcome-section {
+        text-align: center;
+    }
+    
+    .welcome-title {
+        font-size: 1.5rem;
+    }
+    
+    .charts-section .row {
+        flex-direction: column;
+    }
+    
+    .quick-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .welcome-section {
+        padding: 20px;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+// Dashboard initialization
+let dashboardData = null;
+let charts = {};
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof initializeDashboard === 'function') {
+        initializeDashboard();
+    }
+});
+
+// Dashboard-specific functions
+function initializeDashboard() {
+    loadDashboardData();
+    setupEventListeners();
+    initializeCharts();
+}
+
+function loadDashboardData() {
+    showLoading();
+    
+    // Load dashboard stats
+    fetch(CONFIG.getEndpoint('DASHBOARD_STATS'), {
+        headers: {
+            'Authorization': `Bearer ${getAuthToken()}`,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.stats) {
+            dashboardData = data.stats;
+            renderDashboard();
+        }
+    })
+    .catch(error => {
+        console.error('Error loading dashboard data:', error);
+        showErrorMessage('Failed to load dashboard data');
+    })
+    .finally(() => {
+        hideLoading();
+    });
+}
+
+function renderDashboard() {
+    const user = getCurrentUser();
+    if (!user || !dashboardData) return;
+    
+    // Update welcome section
+    updateWelcomeSection(user);
+    
+    // Render role-specific stats
+    renderDashboardStats(user.role, dashboardData);
+    
+    // Render role-specific content
+    renderRoleContent(user.role);
+    
+    // Update charts
+    updateCharts();
+    
+    // Load recent activity
+    loadRecentActivity();
+}
+
+function updateWelcomeSection(user) {
+    const userNameEl = document.getElementById('userName');
+    const subtitleEl = document.getElementById('welcomeSubtitle');
+    const quickActionBtn = document.getElementById('quickActionBtn');
+    const quickActionText = document.getElementById('quickActionText');
+    
+    if (userNameEl) {
+        userNameEl.textContent = `${user.first_name} ${user.last_name}`;
+    }
+    
+    // Role-specific welcome messages and actions
+    const roleConfig = {
+        student: {
+            subtitle: "Discover new opportunities and connect with mentors!",
+            action: "Browse Jobs",
+            icon: "fas fa-search"
+        },
+        alumni: {
+            subtitle: "Help shape the next generation of professionals!",
+            action: "View Students",
+            icon: "fas fa-users"
+        },
+        hod: {
+            subtitle: "Manage your department's placement activities!",
+            action: "Review Applications",
+            icon: "fas fa-clipboard-check"
+        },
+        hr: {
+            subtitle: "Find the perfect candidates for your openings!",
+            action: "Post New Job",
+            icon: "fas fa-plus-circle"
+        },
+        admin: {
+            subtitle: "Oversee platform operations and approvals!",
+            action: "Pending Approvals",
+            icon: "fas fa-check-circle"
+        },
+        super_admin: {
+            subtitle: "Monitor and manage the entire platform!",
+            action: "System Overview",
+            icon: "fas fa-chart-area"
+        }
+    };
+    
+    const config = roleConfig[user.role] || roleConfig.student;
+    
+    if (subtitleEl) {
+        subtitleEl.textContent = config.subtitle;
+    }
+    
+    if (quickActionText) {
+        quickActionText.textContent = config.action;
+    }
+    
+    if (quickActionBtn) {
+        const icon = quickActionBtn.querySelector('i');
+        if (icon) {
+            icon.className = config.icon;
+        }
+    }
+}
+
+function renderDashboardStats(role, stats) {
+    const statsContainer = document.getElementById('dashboardStats');
+    if (!statsContainer) return;
+    
+    // Role-specific stat configurations
+    const statConfigs = {
+        student: [
+            { key: 'applications_count', title: 'Applications', icon: 'fas fa-file-alt', color: 'primary' },
+            { key: 'shortlisted_count', title: 'Shortlisted', icon: 'fas fa-check-circle', color: 'success' },
+            { key: 'available_jobs', title: 'Available Jobs', icon: 'fas fa-briefcase', color: 'info' },
+            { key: 'unread_messages', title: 'Messages', icon: 'fas fa-envelope', color: 'warning' }
+        ],
+        alumni: [
+            { key: 'mentorship_requests', title: 'Pending Requests', icon: 'fas fa-user-plus', color: 'warning' },
+            { key: 'active_connections', title: 'Active Mentorships', icon: 'fas fa-handshake', color: 'success' },
+            { key: 'total_students_helped', title: 'Students Helped', icon: 'fas fa-graduation-cap', color: 'info' },
+            { key: 'unread_messages', title: 'Messages', icon: 'fas fa-envelope', color: 'primary' }
+        ],
+        hod: [
+            { key: 'department_jobs', title: 'Department Jobs', icon: 'fas fa-briefcase', color: 'primary' },
+            { key: 'department_applications', title: 'Applications', icon: 'fas fa-file-alt', color: 'info' },
+            { key: 'department_students', title: 'Students', icon: 'fas fa-users', color: 'success' },
+            { key: 'pending_shortlists', title: 'Pending Reviews', icon: 'fas fa-clock', color: 'warning' }
+        ],
+        hr: [
+            { key: 'posted_jobs', title: 'Posted Jobs', icon: 'fas fa-briefcase', color: 'primary' },
+            { key: 'approved_jobs', title: 'Approved Jobs', icon: 'fas fa-check-circle', color: 'success' },
+            { key: 'total_applications', title: 'Applications', icon: 'fas fa-file-alt', color: 'info' },
+            { key: 'pending_jobs', title: 'Pending Approval', icon: 'fas fa-clock', color: 'warning' }
+        ],
+        admin: [
+            { key: 'pending_approvals', title: 'Pending Approvals', icon: 'fas fa-clock', color: 'warning' },
+            { key: 'total_jobs', title: 'Total Jobs', icon: 'fas fa-briefcase', color: 'primary' },
+            { key: 'total_applications', title: 'Applications', icon: 'fas fa-file-alt', color: 'info' },
+            { key: 'active_students', title: 'Active Students', icon: 'fas fa-users', color: 'success' }
+        ],
+        super_admin: [
+            { key: 'total_users', title: 'Total Users', icon: 'fas fa-users', color: 'primary' },
+            { key: 'total_jobs', title: 'Total Jobs', icon: 'fas fa-briefcase', color: 'info' },
+            { key: 'total_applications', title: 'Applications', icon: 'fas fa-file-alt', color: 'success' },
+            { key: 'active_chats', title: 'Active Chats', icon: 'fas fa-comments', color: 'warning' }
+        ]
+    };
+    
+    const configs = statConfigs[role] || statConfigs.student;
+    
+    statsContainer.innerHTML = configs.map(config => {
+        const value = stats[config.key] || 0;
+        return `
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title">${config.title}</h3>
+                    <div class="card-icon">
+                        <i class="${config.icon}"></i>
+                    </div>
+                </div>
+                <div class="card-value">${value.toLocaleString()}</div>
+                <div class="card-description">
+                    ${getStatDescription(config.key, value)}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function getStatDescription(key, value) {
+    const descriptions = {
+        applications_count: `Total applications submitted`,
+        shortlisted_count: `Applications shortlisted`,
+        available_jobs: `Jobs matching your profile`,
+        unread_messages: `New messages waiting`,
+        mentorship_requests: `Students requesting mentorship`,
+        active_connections: `Ongoing mentorship connections`,
+        total_students_helped: `Students you've mentored`,
+        department_jobs: `Jobs in your department`,
+        department_applications: `Applications received`,
+        department_students: `Students in department`,
+        pending_shortlists: `Applications awaiting review`,
+        posted_jobs: `Jobs you've posted`,
+        approved_jobs: `Jobs approved and active`,
+        total_applications: `Applications received`,
+        pending_jobs: `Jobs awaiting approval`,
+        pending_approvals: `Jobs requiring approval`,
+        total_jobs: `Jobs on the platform`,
+        active_students: `Active student accounts`,
+        total_users: `Registered users`,
+        active_chats: `Ongoing conversations`
+    };
+    
+    return descriptions[key] || 'Platform activity';
+}
+
+function renderRoleContent(role) {
+    const contentContainer = document.getElementById('dashboardContent');
+    if (!contentContainer) return;
+    
+    // This would be expanded based on specific role requirements
+    // For now, we'll show a placeholder
+    contentContainer.innerHTML = `
+        <div class="role-section">
+            <h2>
+                <i class="fas fa-chart-line"></i>
+                Quick Actions
+            </h2>
+            <div class="section-grid" id="quickActionsGrid">
+                <!-- Quick actions will be populated based on role -->
+            </div>
+        </div>
+    `;
+    
+    // Load role-specific quick actions
+    loadQuickActions(role);
+}
+
+function loadQuickActions(role) {
+    // This would load role-specific quick action cards
+    const actionsGrid = document.getElementById('quickActionsGrid');
+    if (!actionsGrid) return;
+    
+    // Placeholder content - would be expanded for each role
+    actionsGrid.innerHTML = `
+        <div class="content-card">
+            <h4>Coming Soon</h4>
+            <p>Role-specific quick actions will be available here.</p>
+            <button class="btn btn-outline-light btn-sm">Learn More</button>
+        </div>
+    `;
+}
+
+function initializeCharts() {
+    // Initialize Chart.js charts
+    const activityCtx = document.getElementById('activityChart');
+    const distributionCtx = document.getElementById('distributionChart');
+    
+    if (activityCtx) {
+        charts.activity = new Chart(activityCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Activity',
+                    data: [],
+                    borderColor: CONFIG.CHARTS.COLORS.primary,
+                    backgroundColor: CONFIG.CHARTS.COLORS.primary + '20',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                ...CONFIG.CHARTS.DEFAULT_OPTIONS,
+                scales: {
+                    ...CONFIG.CHARTS.DEFAULT_OPTIONS.scales,
+                    y: {
+                        ...CONFIG.CHARTS.DEFAULT_OPTIONS.scales.y,
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    if (distributionCtx) {
+        charts.distribution = new Chart(distributionCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [
+                        CONFIG.CHARTS.COLORS.primary,
+                        CONFIG.CHARTS.COLORS.secondary,
+                        CONFIG.CHARTS.COLORS.success,
+                        CONFIG.CHARTS.COLORS.warning,
+                        CONFIG.CHARTS.COLORS.danger
+                    ]
+                }]
+            },
+            options: {
+                ...CONFIG.CHARTS.DEFAULT_OPTIONS,
+                plugins: {
+                    ...CONFIG.CHARTS.DEFAULT_OPTIONS.plugins,
+                    legend: {
+                        ...CONFIG.CHARTS.DEFAULT_OPTIONS.plugins.legend,
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+}
+
+function updateCharts() {
+    // Update charts with real data
+    if (charts.activity && dashboardData) {
+        // Update activity chart with sample data
+        const labels = Array.from({length: 7}, (_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - i));
+            return date.toLocaleDateString('en-US', { weekday: 'short' });
+        });
+        
+        const data = Array.from({length: 7}, () => Math.floor(Math.random() * 20) + 5);
+        
+        charts.activity.data.labels = labels;
+        charts.activity.data.datasets[0].data = data;
+        charts.activity.update();
+    }
+    
+    if (charts.distribution && dashboardData) {
+        // Update distribution chart with sample data
+        charts.distribution.data.labels = ['Active', 'Pending', 'Completed', 'Cancelled'];
+        charts.distribution.data.datasets[0].data = [40, 20, 30, 10];
+        charts.distribution.update();
+    }
+}
+
+function loadRecentActivity() {
+    const activityList = document.getElementById('recentActivityList');
+    if (!activityList) return;
+    
+    // Sample activity data - would be fetched from API
+    const activities = [
+        {
+            type: 'job',
+            icon: 'fas fa-briefcase',
+            title: 'New job posted',
+            description: 'Software Engineer position at Tech Corp',
+            time: '2 hours ago'
+        },
+        {
+            type: 'application',
+            icon: 'fas fa-file-alt',
+            title: 'Application submitted',
+            description: 'Applied for Frontend Developer role',
+            time: '4 hours ago'
+        },
+        {
+            type: 'message',
+            icon: 'fas fa-envelope',
+            title: 'New message',
+            description: 'Message from mentor John Doe',
+            time: '6 hours ago'
+        }
+    ];
+    
+    activityList.innerHTML = activities.map(activity => `
+        <div class="activity-item">
+            <div class="activity-icon ${activity.type}">
+                <i class="${activity.icon}"></i>
+            </div>
+            <div class="activity-content">
+                <div class="activity-title">${activity.title}</div>
+                <div class="activity-description">${activity.description}</div>
+            </div>
+            <div class="activity-time">${activity.time}</div>
+        </div>
+    `).join('');
+}
+
+function setupEventListeners() {
+    // Chart period selector
+    const chartPeriod = document.getElementById('chartPeriod');
+    if (chartPeriod) {
+        chartPeriod.addEventListener('change', function() {
+            updateCharts();
+        });
+    }
+    
+    // Quick action button
+    const quickActionBtn = document.getElementById('quickActionBtn');
+    if (quickActionBtn) {
+        quickActionBtn.addEventListener('click', function() {
+            handleQuickAction();
+        });
+    }
+}
+
+function handleQuickAction() {
+    const user = getCurrentUser();
+    if (!user) return;
+    
+    // Role-specific quick actions
+    const actions = {
+        student: () => window.location.href = '/jobs',
+        alumni: () => window.location.href = '/students',
+        hod: () => window.location.href = '/applications',
+        hr: () => window.location.href = '/post-job',
+        admin: () => window.location.href = '/job-approvals',
+        super_admin: () => window.location.href = '/analytics'
+    };
+    
+    const action = actions[user.role];
+    if (action) {
+        action();
+    }
+}
+
+function showLoading() {
+    const container = document.getElementById('dashboardStats');
+    if (container) {
+        container.innerHTML = `
+            <div class="loading">
+                <i class="fas fa-spinner"></i>
+                Loading dashboard...
+            </div>
+        `;
+    }
+}
+
+function hideLoading() {
+    // Loading will be hidden when content is rendered
+}
+
+function showErrorMessage(message) {
+    showToast(message, 'danger');
+}
+
+// Refresh dashboard data periodically
+setInterval(() => {
+    if (document.visibilityState === 'visible') {
+        loadDashboardData();
+    }
+}, 5 * 60 * 1000); // Refresh every 5 minutes
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Additional dashboard-specific scripts can be added here
+console.log('Dashboard loaded');
+</script>
+{% endblock %}
